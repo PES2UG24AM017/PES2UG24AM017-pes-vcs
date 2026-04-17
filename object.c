@@ -95,6 +95,31 @@ int object_exists(const ObjectID *id) {
 // Returns 0 on success, -1 on error.
 int object_write(ObjectType type, const void *data, size_t len, ObjectID *id_out) {
     // TODO: Implement
+    	char header[64];
+	int header_len = snprintf(header, sizeof(header), "%s %ld", type, size);
+	header[header_len++] = '\0';
+
+	unsigned char *full_data = malloc(header_len + size);
+	memcpy(full_data, header, header_len);
+	memcpy(full_data + header_len, data, size);
+
+	unsigned char hash[SHA256_DIGEST_LENGTH];
+	SHA256(full_data, header_len + size, hash);
+	sha256_to_hex(hash, hash_out);
+
+	char dir_path[PATH_MAX], file_path[PATH_MAX];
+	snprintf(dir_path, sizeof(dir_path), ".pes/objects/%.2s", hash_out);
+	snprintf(file_path, sizeof(file_path), "%s/%s", dir_path, hash_out + 2);
+
+	mkdir(".pes/objects", 0755);
+	mkdir(dir_path, 0755);
+
+	FILE *f = fopen(file_path, "wb");
+	if (!f) { free(full_data); return -1; }
+	fwrite(full_data, 1, header_len + size, f);
+	fclose(f);
+	free(full_data);
+	return 0;
     (void)type; (void)data; (void)len; (void)id_out;
     return -1;
 }
@@ -123,6 +148,25 @@ int object_write(ObjectType type, const void *data, size_t len, ObjectID *id_out
 // Returns 0 on success, -1 on error (file not found, corrupt, etc.).
 int object_read(const ObjectID *id, ObjectType *type_out, void **data_out, size_t *len_out) {
     // TODO: Implement
+    char path[PATH_MAX];
+    snprintf(path, sizeof(path), ".pes/objects/%.2s/%s", hash_hex, hash_hex + 2);
+    FILE *f = fopen(path, "rb");
+    if (!f) return NULL;
+
+    fseek(f, 0, SEEK_END);
+    long total_size = ftell(f);
+    rewind(f);
+
+    unsigned char *buf = malloc(total_size);
+    fread(buf, 1, total_size, f);
+    fclose(f);
+
+    char *data_start = memchr(buf, '\0', total_size);
+    *size_out = total_size - (data_start - (char*)buf + 1);
+    void *res = malloc(*size_out);
+    memcpy(res, data_start + 1, *size_out);
+    free(buf);
+    return res;
     (void)id; (void)type_out; (void)data_out; (void)len_out;
     return -1;
 }
