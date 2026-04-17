@@ -85,6 +85,7 @@ int object_exists(const ObjectID *id) {
 //   - compute_hash       : hashing the combined header + data
 //   - object_exists      : checking for deduplication
 //   - mkdir              : creating the shard directory (use mode 0755)
+//Creating directories for sharding
 //   - open, write, close : creating and writing to the temp file
 //                          (Use O_CREAT | O_WRONLY | O_TRUNC, mode 0644)
 //   - fsync              : flushing the file descriptor to disk
