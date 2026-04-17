@@ -146,7 +146,22 @@ static int build_tree_recursive(const IndexEntry *entries, size_t count, int pre
             i++;
         } else {
             // It's a subdirectory - implement this in next commit
-            i++; 
+            size_t dir_name_len = slash - full_path;
+            char dir_name[256];
+            strncpy(dir_name, full_path, dir_name_len);
+            dir_name[dir_name_len] = '\0';
+
+            size_t group_start = i;
+            while (i < count && strncmp(entries[i].path + prefix_len, dir_name, dir_name_len) == 0 &&
+                   entries[i].path[prefix_len + dir_name_len] == '/') {
+                i++;
+            }
+
+            TreeEntry *te = &tree.entries[tree.count++];
+            strncpy(te->name, dir_name, sizeof(te->name));
+            te->mode = MODE_DIR;
+            // Recurse to build the child tree
+            build_tree_recursive(&entries[group_start], i - group_start, prefix_len + dir_name_len + 1, &te->hash);
         }
     }
     return 0; // Temporary return
