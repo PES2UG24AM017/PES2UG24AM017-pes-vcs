@@ -194,8 +194,49 @@ int head_update(const ObjectID *new_commit) {
 //
 // Returns 0 on success, -1 on error.
 int commit_create(const char *message, ObjectID *commit_id_out) {
-    // TODO: Implement commit creation
-    // (See Lab Appendix for logical steps)
-    (void)message; (void)commit_id_out;
-    return -1;
+    Commit commit;
+    memset(&commit, 0, sizeof(Commit));
+
+    // 1. Create the directory tree from the index and get the root tree hash
+    //    (tree_write or tree_from_index depending on your tree.h)
+    if (tree_from_index(&commit.tree) != 0) {
+        fprintf(stderr, "error: failed to create tree from index\n");
+        return -1;
+    }
+
+    // 2. Read current HEAD to find the parent commit hash
+    //    If head_read fails, it just means this is the initial commit (no parent).
+    if (head_read(&commit.parent) == 0) {
+        commit.has_parent = 1;
+    } else {
+        commit.has_parent = 0;
+    }
+
+    // 3. Set metadata (Author, Timestamp, Message)
+    //    pes_author() is usually defined in pes.h
+    snprintf(commit.author, sizeof(commit.author), "%s", pes_author());
+    commit.timestamp = (uint64_t)time(NULL);
+    snprintf(commit.message, sizeof(commit.message), "%s", message);
+
+    // 4. Serialize the Commit struct into the PES text format
+    void *data = NULL;
+    size_t len = 0;
+    if (commit_serialize(&commit, &data, &len) != 0) {
+        return -1;
+    }
+
+    // 5. Write the commit as a permanent object
+    if (object_write(OBJ_COMMIT, data, len, commit_id_out) != 0) {
+        free(data);
+        return -1;
+    }
+    free(data);
+
+    // 6. Update the branch reference (HEAD) to point to this new commit
+    if (head_update(commit_id_out) != 0) {
+        fprintf(stderr, "error: failed to update HEAD\n");
+        return -1;
+    }
+
+    return 0;
 }
