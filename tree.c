@@ -164,6 +164,21 @@ static int build_tree_recursive(const IndexEntry *entries, size_t count, int pre
             build_tree_recursive(&entries[group_start], i - group_start, prefix_len + dir_name_len + 1, &te->hash);
         }
     }
+    void *data;
+    size_t len;
+
+    // 1. Convert the Tree struct to the binary format Git expects
+    if (tree_serialize(&tree, &data, &len) != 0) return -1;
+
+    // 2. Write that binary data to the .pes/objects folder
+    if (object_write(OBJ_TREE, data, len, id_out) != 0) {
+        free(data);
+        return -1;
+    }
+
+    // 3. Clean up the memory we allocated in tree_serialize
+    free(data);
+    
     return 0; // Temporary return
 }
 
