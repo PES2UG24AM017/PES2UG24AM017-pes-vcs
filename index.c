@@ -163,11 +163,34 @@ int index_load(Index *index) {
 //   - rename                           : atomically moving the temp file over the old index
 //
 // Returns 0 on success, -1 on error.
+static int compare_index_entries(const void *a, const void *b) {
+    return strcmp(((IndexEntry*)a)->path, ((IndexEntry*)b)->path);
+}
 int index_save(const Index *index) {
-    // TODO: Implement atomic index saving
-    // (See Lab Appendix for logical steps)
-    (void)index;
-    return -1;
+    char temp_path[PATH_MAX];
+    snprintf(temp_path, sizeof(temp_path), "%s.tmp", INDEX_PATH);
+    
+    FILE *f = fopen(temp_path, "w");
+    if (!f) return -1;
+
+    // Git requires the index to be sorted by path
+    Index sorted = *index;
+    qsort(sorted.entries, sorted.count, sizeof(IndexEntry), compare_index_entries);
+
+    for (int i = 0; i < sorted.count; i++) {
+        char hex[HASH_HEX_SIZE + 1];
+        hash_to_hex(&sorted.entries[i].hash, hex);
+        fprintf(f, "%o %s %ld %ld %s\n", 
+                sorted.entries[i].mode, hex, 
+                sorted.entries[i].mtime_sec, 
+                sorted.entries[i].size, 
+                sorted.entries[i].path);
+    }
+    
+    fflush(f);
+    fsync(fileno(f));
+    fclose(f);
+    return rename(temp_path, INDEX_PATH);
 }
 
 // Stage a file for the next commit.
