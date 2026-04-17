@@ -152,6 +152,7 @@ static int build_tree_recursive(const IndexEntry *entries, size_t count, int pre
             dir_name[dir_name_len] = '\0';
 
             size_t group_start = i;
+            if (tree.count >= MAX_TREE_ENTRIES) return -1;
             while (i < count && strncmp(entries[i].path + prefix_len, dir_name, dir_name_len) == 0 &&
                    entries[i].path[prefix_len + dir_name_len] == '/') {
                 i++;
