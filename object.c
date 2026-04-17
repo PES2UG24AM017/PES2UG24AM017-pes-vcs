@@ -1,3 +1,4 @@
+// Content-addressable storage implementation
 // object.c — Content-addressable object store
 //
 // Every piece of data (file contents, directory listings, commits) is stored
