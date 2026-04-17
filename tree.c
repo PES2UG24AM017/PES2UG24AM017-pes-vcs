@@ -129,6 +129,29 @@ int tree_serialize(const Tree *tree, void **data_out, size_t *len_out) {
 //   - object_write    : save that binary buffer to the store as OBJ_TREE
 //
 // Returns 0 on success, -1 on error.
+static int build_tree_recursive(const IndexEntry *entries, size_t count, int prefix_len, ObjectID *id_out) {
+    Tree tree;
+    tree.count = 0;
+
+    for (size_t i = 0; i < count; ) {
+        const char *full_path = entries[i].path + prefix_len;
+        const char *slash = strchr(full_path, '/');
+
+        if (!slash) {
+            // It's a file in the current directory
+            TreeEntry *te = &tree.entries[tree.count++];
+            strncpy(te->name, full_path, sizeof(te->name));
+            te->mode = entries[i].mode;
+            te->hash = entries[i].id;
+            i++;
+        } else {
+            // It's a subdirectory - implement this in next commit
+            i++; 
+        }
+    }
+    return 0; // Temporary return
+}
+
 int tree_from_index(ObjectID *id_out) {
     // TODO: Implement recursive tree building
     // (See Lab Appendix for logical steps)
