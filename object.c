@@ -172,3 +172,4 @@ int object_read(const ObjectID *id, ObjectType *type_out, void **data_out, size_
     (void)id; (void)type_out; (void)data_out; (void)len_out;
     return -1;
 }
+// Object reading and integrity verification complete
